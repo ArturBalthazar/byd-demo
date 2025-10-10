@@ -1,0 +1,70 @@
+{
+  "objectLogics": {
+    "__scene__": [
+      {
+        "id": "b7704a6b-ecc0-48e9-8b48-410618158d15",
+        "scriptName": "Script_001.js",
+        "enabled": true,
+        "parameters": {
+          "colorYellowBtn": {
+            "id": "button_002",
+            "name": "Body-Yellow",
+            "type": "button"
+          },
+          "colorWhiteBtn": {
+            "id": "button_003",
+            "name": "Body-White",
+            "type": "button"
+          },
+          "colorBlackBtn": {
+            "id": "button_005",
+            "name": "Body-Black",
+            "type": "button"
+          },
+          "colorPinkBtn": {
+            "id": "button_004",
+            "name": "Body-Pink",
+            "type": "button"
+          },
+          "trimLightBlueBtn": {
+            "id": "button_006",
+            "name": "Tim-LightBlue",
+            "type": "button"
+          },
+          "trimPinkBtn": {
+            "id": "button_008",
+            "name": "Tim-Pink",
+            "type": "button"
+          },
+          "trimDarkBlueBtn": {
+            "id": "button_007",
+            "name": "Tim-DarkBlue",
+            "type": "button"
+          },
+          "viewSwapBtn": {
+            "id": "button_001",
+            "name": "Switch View",
+            "type": "button"
+          },
+          "exteriorCameraRef": {
+            "id": "camera1",
+            "name": "Exterior Cam",
+            "type": "camera"
+          },
+          "interiorCameraRef": {
+            "id": "ee7ca17b-f48b-4a80-9673-5915445d183d",
+            "name": "Interior Cam",
+            "type": "camera"
+          },
+          "carRef": {
+            "id": "root::byd-seagull",
+            "name": "byd_seagull",
+            "type": "mesh"
+          },
+          "rotationStrength": 0.01
+        },
+        "scriptPath": "scripts/Script_001.js"
+      }
+    ]
+  }
+}
