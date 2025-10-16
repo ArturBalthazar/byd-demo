@@ -58,12 +58,67 @@
           },
           "carRef": {
             "id": "root::byd-seagull",
-            "name": "byd_seagull",
+            "name": "BYD_Seagull",
             "type": "mesh"
           },
           "rotationStrength": 0.01
         },
         "scriptPath": "scripts/Script_001.js"
+      },
+      {
+        "id": "8fc93372-f086-4a4b-a243-530e5c1d19ce",
+        "scriptName": "Script_005.js",
+        "enabled": true,
+        "parameters": {
+          "carRoot": {
+            "id": "root::byd-seagull",
+            "name": "BYD_Seagull",
+            "type": "mesh"
+          },
+          "buttonDoors": {
+            "id": "button_012",
+            "name": "Door",
+            "type": "button"
+          },
+          "buttonChargingPort": {
+            "id": "button_015",
+            "name": "EV",
+            "type": "button"
+          },
+          "buttonTrunk": {
+            "id": "button_014",
+            "name": "Trunk",
+            "type": "button"
+          },
+          "buttonNFC": {
+            "id": "button_013",
+            "name": "NFC",
+            "type": "button"
+          },
+          "buttonToggleInterior": {
+            "id": "button_001",
+            "name": "Switch View",
+            "type": "button"
+          },
+          "buttonSteeringWheel": {
+            "id": "button_017",
+            "name": "Steering Wheel",
+            "type": "button"
+          },
+          "buttonScreen": {
+            "id": "button_016",
+            "name": "Screen",
+            "type": "button"
+          },
+          "framesDoors": 250,
+          "framesChargingPort": 250,
+          "framesTrunk": 400,
+          "framesNFC": 250,
+          "framesSteeringWheel": 600,
+          "framesScreen": 250,
+          "speedMultiplier": 2
+        },
+        "scriptPath": "scripts/Script_005.js"
       }
     ]
   }
