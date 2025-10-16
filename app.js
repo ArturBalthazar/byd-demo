@@ -353,6 +353,10 @@
       this.elementMap = new Map();
       this.container = null;
       this.globalAnimations = [];
+      this.screenSizeSettings = {
+        mobile: { enabled: false, width: 768 },
+        tablet: { enabled: false, width: 1024 }
+      };
       console.log('🎨 UILoader initialized');
     }
 
@@ -400,6 +404,12 @@
         this.elements = (uiConfig.elements || []).filter(function(el) {
           return !el.anchoredTo && !anchoredUIIds.has(el.id);
         });
+        
+        // Load screen size settings
+        if (uiConfig.screenSizeSettings) {
+          this.screenSizeSettings = uiConfig.screenSizeSettings;
+          console.log('✅ Loaded screen size settings:', this.screenSizeSettings);
+        }
         
         console.log('✅ Loaded ' + this.elements.length + ' UI elements (anchored elements excluded)');
         return true;
@@ -628,15 +638,17 @@
     }
 
     applyPseudoStates(domElement, element) {
+      var self = this;
       var uniqueClass = 'ui-element-' + element.id;
       domElement.classList.add(uniqueClass);
       
-      if (element.hoverStyle || element.activeStyle) {
+      if (element.hoverStyle || element.activeStyle || element.mobileStyle || element.mobileHoverStyle || element.mobileActiveStyle || element.tabletStyle || element.tabletHoverStyle || element.tabletActiveStyle) {
         domElement.style.pointerEvents = 'auto';
       }
       
       var cssRules = '';
       
+      // Desktop styles (default)
       if (element.hoverStyle) {
         var hoverStyles = Object.entries(element.hoverStyle)
           .map(function([key, value]) {
@@ -655,6 +667,83 @@
           })
           .join(' ');
         cssRules += '.' + uniqueClass + ':active { ' + activeStyles + ' }\n';
+      }
+      
+      // Mobile styles (if enabled)
+      if (this.screenSizeSettings.mobile.enabled) {
+        var mobileMaxWidth = this.screenSizeSettings.mobile.width;
+        
+        if (element.mobileStyle) {
+          var mobileStyles = Object.entries(element.mobileStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ' { ' + mobileStyles + ' } }\n';
+        }
+        
+        if (element.mobileHoverStyle) {
+          var mobileHoverStyles = Object.entries(element.mobileHoverStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ':hover { ' + mobileHoverStyles + ' } }\n';
+        }
+        
+        if (element.mobileActiveStyle) {
+          var mobileActiveStyles = Object.entries(element.mobileActiveStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ':active { ' + mobileActiveStyles + ' } }\n';
+        }
+      }
+      
+      // Tablet styles (if enabled)
+      if (this.screenSizeSettings.tablet.enabled) {
+        var tabletMaxWidth = this.screenSizeSettings.tablet.width;
+        var mobileMaxWidth = this.screenSizeSettings.mobile.enabled ? this.screenSizeSettings.mobile.width : 0;
+        
+        // Tablet styles should apply between mobile and tablet breakpoints
+        var minWidth = this.screenSizeSettings.mobile.enabled ? mobileMaxWidth + 1 : 0;
+        var mediaQuery = minWidth > 0 
+          ? '@media (min-width: ' + minWidth + 'px) and (max-width: ' + tabletMaxWidth + 'px)' 
+          : '@media (max-width: ' + tabletMaxWidth + 'px)';
+        
+        if (element.tabletStyle) {
+          var tabletStyles = Object.entries(element.tabletStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += mediaQuery + ' { .' + uniqueClass + ' { ' + tabletStyles + ' } }\n';
+        }
+        
+        if (element.tabletHoverStyle) {
+          var tabletHoverStyles = Object.entries(element.tabletHoverStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += mediaQuery + ' { .' + uniqueClass + ':hover { ' + tabletHoverStyles + ' } }\n';
+        }
+        
+        if (element.tabletActiveStyle) {
+          var tabletActiveStyles = Object.entries(element.tabletActiveStyle)
+            .map(function([key, value]) {
+              var cssKey = key.replace(/([A-Z])/g, '-$1').toLowerCase();
+              return cssKey + ': ' + value + ' !important;';
+            })
+            .join(' ');
+          cssRules += mediaQuery + ' { .' + uniqueClass + ':active { ' + tabletActiveStyles + ' } }\n';
+        }
       }
       
       if (cssRules) {
@@ -703,96 +792,151 @@
     }
 
     applyPseudoEffects(domElement, element) {
+      var self = this;
       var uniqueClass = 'ui-element-' + element.id;
       domElement.classList.add(uniqueClass);
       
       var cssRules = '';
       
-      // Check if any effect has hover or active settings
+      // Helper function to generate effect CSS for a given settings key
+      var generateEffectCSS = function(settingsKey) {
+        var filters = [];
+        var shadows = [];
+        var backdropBlur = null;
+        
+        element.effects.forEach(function(effect) {
+          if (effect.enabled === false) return;
+          
+          var getVal = function(prop) {
+            return effect[settingsKey]?.[prop] !== undefined ? effect[settingsKey][prop] : effect[prop];
+          };
+          
+          switch (effect.type) {
+            case 'dropShadow':
+              shadows.push((getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
+              break;
+            case 'innerShadow':
+              shadows.push('inset ' + (getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
+              break;
+            case 'blur':
+              filters.push('blur(' + (getVal('blurAmount') || '0px') + ')');
+              break;
+            case 'frostedBackground':
+              backdropBlur = 'blur(' + (getVal('frostedBlur') || '10px') + ')';
+              break;
+          }
+        });
+        
+        var effectStyles = '';
+        if (shadows.length > 0) effectStyles += 'box-shadow: ' + shadows.join(', ') + ' !important;';
+        if (filters.length > 0) effectStyles += 'filter: ' + filters.join(' ') + ' !important;';
+        if (backdropBlur) effectStyles += 'backdrop-filter: ' + backdropBlur + ' !important;';
+        
+        return effectStyles;
+      };
+      
+      // Check if any effect has settings for any state
       var hasHoverSettings = element.effects.some(function(eff) { 
         return eff.hoverSettings && Object.keys(eff.hoverSettings).length > 0; 
       });
       var hasActiveSettings = element.effects.some(function(eff) { 
         return eff.activeSettings && Object.keys(eff.activeSettings).length > 0; 
       });
+      var hasMobileSettings = element.effects.some(function(eff) { 
+        return eff.mobileSettings && Object.keys(eff.mobileSettings).length > 0; 
+      });
+      var hasMobileHoverSettings = element.effects.some(function(eff) { 
+        return eff.mobileHoverSettings && Object.keys(eff.mobileHoverSettings).length > 0; 
+      });
+      var hasMobileActiveSettings = element.effects.some(function(eff) { 
+        return eff.mobileActiveSettings && Object.keys(eff.mobileActiveSettings).length > 0; 
+      });
+      var hasTabletSettings = element.effects.some(function(eff) { 
+        return eff.tabletSettings && Object.keys(eff.tabletSettings).length > 0; 
+      });
+      var hasTabletHoverSettings = element.effects.some(function(eff) { 
+        return eff.tabletHoverSettings && Object.keys(eff.tabletHoverSettings).length > 0; 
+      });
+      var hasTabletActiveSettings = element.effects.some(function(eff) { 
+        return eff.tabletActiveSettings && Object.keys(eff.tabletActiveSettings).length > 0; 
+      });
       
-      if (hasHoverSettings || hasActiveSettings) {
+      if (hasHoverSettings || hasActiveSettings || hasMobileHoverSettings || hasMobileActiveSettings || hasTabletHoverSettings || hasTabletActiveSettings) {
         domElement.style.pointerEvents = 'auto';
       }
       
-      // Generate CSS for hover effects
+      // Desktop hover effects
       if (hasHoverSettings) {
-        var filters = [];
-        var shadows = [];
-        var backdropBlur = null;
-        
-        element.effects.forEach(function(effect) {
-          if (effect.enabled === false) return;
-          
-          var getVal = function(prop) {
-            return effect.hoverSettings?.[prop] !== undefined ? effect.hoverSettings[prop] : effect[prop];
-          };
-          
-          switch (effect.type) {
-            case 'dropShadow':
-              shadows.push((getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
-              break;
-            case 'innerShadow':
-              shadows.push('inset ' + (getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
-              break;
-            case 'blur':
-              filters.push('blur(' + (getVal('blurAmount') || '0px') + ')');
-              break;
-            case 'frostedBackground':
-              backdropBlur = 'blur(' + (getVal('frostedBlur') || '10px') + ')';
-              break;
-          }
-        });
-        
-        var hoverStyles = '';
-        if (shadows.length > 0) hoverStyles += 'box-shadow: ' + shadows.join(', ') + ' !important;';
-        if (filters.length > 0) hoverStyles += 'filter: ' + filters.join(' ') + ' !important;';
-        if (backdropBlur) hoverStyles += 'backdrop-filter: ' + backdropBlur + ' !important;';
+        var hoverStyles = generateEffectCSS('hoverSettings');
         if (hoverStyles) {
           cssRules += '.' + uniqueClass + ':hover { ' + hoverStyles + ' }\n';
         }
       }
       
-      // Generate CSS for active effects
+      // Desktop active effects
       if (hasActiveSettings) {
-        var filters = [];
-        var shadows = [];
-        var backdropBlur = null;
-        
-        element.effects.forEach(function(effect) {
-          if (effect.enabled === false) return;
-          
-          var getVal = function(prop) {
-            return effect.activeSettings?.[prop] !== undefined ? effect.activeSettings[prop] : effect[prop];
-          };
-          
-          switch (effect.type) {
-            case 'dropShadow':
-              shadows.push((getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
-              break;
-            case 'innerShadow':
-              shadows.push('inset ' + (getVal('shadowX') || '0px') + ' ' + (getVal('shadowY') || '0px') + ' ' + (getVal('shadowBlur') || '0px') + ' ' + (getVal('shadowSpread') || '0px') + ' ' + (getVal('shadowColor') || 'rgba(0,0,0,0.25)'));
-              break;
-            case 'blur':
-              filters.push('blur(' + (getVal('blurAmount') || '0px') + ')');
-              break;
-            case 'frostedBackground':
-              backdropBlur = 'blur(' + (getVal('frostedBlur') || '10px') + ')';
-              break;
-          }
-        });
-        
-        var activeStyles = '';
-        if (shadows.length > 0) activeStyles += 'box-shadow: ' + shadows.join(', ') + ' !important;';
-        if (filters.length > 0) activeStyles += 'filter: ' + filters.join(' ') + ' !important;';
-        if (backdropBlur) activeStyles += 'backdrop-filter: ' + backdropBlur + ' !important;';
+        var activeStyles = generateEffectCSS('activeSettings');
         if (activeStyles) {
           cssRules += '.' + uniqueClass + ':active { ' + activeStyles + ' }\n';
+        }
+      }
+      
+      // Mobile effects (if enabled)
+      if (this.screenSizeSettings.mobile.enabled) {
+        var mobileMaxWidth = this.screenSizeSettings.mobile.width;
+        
+        if (hasMobileSettings) {
+          var mobileStyles = generateEffectCSS('mobileSettings');
+          if (mobileStyles) {
+            cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ' { ' + mobileStyles + ' } }\n';
+          }
+        }
+        
+        if (hasMobileHoverSettings) {
+          var mobileHoverStyles = generateEffectCSS('mobileHoverSettings');
+          if (mobileHoverStyles) {
+            cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ':hover { ' + mobileHoverStyles + ' } }\n';
+          }
+        }
+        
+        if (hasMobileActiveSettings) {
+          var mobileActiveStyles = generateEffectCSS('mobileActiveSettings');
+          if (mobileActiveStyles) {
+            cssRules += '@media (max-width: ' + mobileMaxWidth + 'px) { .' + uniqueClass + ':active { ' + mobileActiveStyles + ' } }\n';
+          }
+        }
+      }
+      
+      // Tablet effects (if enabled)
+      if (this.screenSizeSettings.tablet.enabled) {
+        var tabletMaxWidth = this.screenSizeSettings.tablet.width;
+        var mobileMaxWidth = this.screenSizeSettings.mobile.enabled ? this.screenSizeSettings.mobile.width : 0;
+        
+        // Tablet effects should apply between mobile and tablet breakpoints
+        var minWidth = this.screenSizeSettings.mobile.enabled ? mobileMaxWidth + 1 : 0;
+        var mediaQuery = minWidth > 0 
+          ? '@media (min-width: ' + minWidth + 'px) and (max-width: ' + tabletMaxWidth + 'px)' 
+          : '@media (max-width: ' + tabletMaxWidth + 'px)';
+        
+        if (hasTabletSettings) {
+          var tabletStyles = generateEffectCSS('tabletSettings');
+          if (tabletStyles) {
+            cssRules += mediaQuery + ' { .' + uniqueClass + ' { ' + tabletStyles + ' } }\n';
+          }
+        }
+        
+        if (hasTabletHoverSettings) {
+          var tabletHoverStyles = generateEffectCSS('tabletHoverSettings');
+          if (tabletHoverStyles) {
+            cssRules += mediaQuery + ' { .' + uniqueClass + ':hover { ' + tabletHoverStyles + ' } }\n';
+          }
+        }
+        
+        if (hasTabletActiveSettings) {
+          var tabletActiveStyles = generateEffectCSS('tabletActiveSettings');
+          if (tabletActiveStyles) {
+            cssRules += mediaQuery + ' { .' + uniqueClass + ':active { ' + tabletActiveStyles + ' } }\n';
+          }
         }
       }
       
@@ -1041,16 +1185,16 @@
   // Texture helpers for overrides
   function isTextureProperty(prop) {
     const textureProps = [
-      'albedoTexture', 'baseTexture', 'diffuseTexture',
-      'metallicTexture', 'roughnessTexture', 'metallicRoughnessTexture',
+      // PBR Material textures
+      'albedoTexture', 'baseTexture',
+      'metallicTexture', 'normalTexture',
+      'emissiveTexture', 'opacityTexture',
+      'ambientTexture', 'lightmapTexture',
       'reflectionTexture', 'refractionTexture',
-      'normalTexture', 'bumpTexture',
-      'emissiveTexture',
-      'opacityTexture',
-      'ambientTexture',
-      'lightmapTexture',
       'clearCoatTexture', 'clearCoatNormalTexture', 'clearCoatRoughnessTexture',
-      'sheenTexture', 'sheenRoughnessTexture'
+      'sheenTexture', 'sheenRoughnessTexture',
+      // Standard Material textures
+      'diffuseTexture', 'specularTexture', 'bumpTexture'
     ];
     return textureProps.includes(prop);
   }
@@ -1076,10 +1220,7 @@
       console.log('🔍 RUNTIME: Loading texture from storage path:', assetStoragePath);
       
       // Use the toRelativeAssetPath function to convert storage path to relative path
-      const rel = toRelativeAssetPath(assetStoragePath);
-      // Check if rel already starts with a directory (assets/, UI/, scripts/, etc.)
-      // If not, it's a bare filename, so add assets/
-      const url = rel.includes('/') ? rel : 'assets/' + rel;
+      const url = toRelativeAssetPath(assetStoragePath);
       
       console.log('🔍 RUNTIME: Converted storage path to URL:', assetStoragePath, '->', url);
       
@@ -1643,8 +1784,7 @@
 
       try {
         // Convert storage path to asset path
-        const rel = toRelativeAssetPath(audioNode.audioFile);
-        const audioUrl = rel.includes('/') ? rel : 'assets/' + rel;
+        const audioUrl = toRelativeAssetPath(audioNode.audioFile);
         console.log('🔊 Loading audio: ' + audioNode.name + ' from ' + audioUrl);
         
         // Create audio element
@@ -2211,9 +2351,8 @@
     try {
       // Convert storage path to asset path
       const rel = toRelativeAssetPath(node.src);
-      // Check if rel already includes a directory path (contains '/')
-      // If not, it's a bare filename, so add 'assets/' prefix
-      const assetPath = rel.includes('/') ? rel : 'assets/' + rel;
+      // Use the path as-is (toRelativeAssetPath already handles directory structure correctly)
+      const assetPath = rel;
       console.log('🔗 Loading model from:', assetPath);
       
       // URL encode the path to handle spaces and special characters
@@ -2593,8 +2732,7 @@
       
       if (env.useIBL && env.iblPath) {
         try {
-          const rel = toRelativeAssetPath(env.iblPath);
-          const assetPath = rel.includes('/') ? rel : 'assets/' + rel;
+          const assetPath = toRelativeAssetPath(env.iblPath);
           console.log('🌍 Loading IBL for SCENE LIGHTING from asset path:', assetPath);
           
           let environmentTexture = null;
@@ -2764,8 +2902,7 @@
         skyboxMaterial.diffuseTexture = null;
 
         if (sbType === 'panoramic' && env.skyboxPanoramaPath) {
-          const rel = toRelativeAssetPath(env.skyboxPanoramaPath);
-          const panoPath = rel.includes('/') ? rel : 'assets/' + rel;
+          const panoPath = toRelativeAssetPath(env.skyboxPanoramaPath);
           console.log('🌄 Applying panoramic skybox:', panoPath);
           const tex = new BABYLON.Texture(panoPath, scene, false, true, BABYLON.Texture.TRILINEAR_SAMPLINGMODE);
           tex.coordinatesMode = BABYLON.Texture.FIXED_EQUIRECTANGULAR_MODE;
@@ -2783,10 +2920,7 @@
           const faces = env.skyboxTextures;
           const order = ['px','nx','py','ny','pz','nz'];
           if (order.every(f => faces[f])) {
-            const urls = order.map(f => {
-              const rel = toRelativeAssetPath(faces[f]);
-              return rel.includes('/') ? rel : 'assets/' + rel;
-            });
+            const urls = order.map(f => toRelativeAssetPath(faces[f]));
             console.log('🧊 Applying cube skybox with faces:', urls);
             const cube = BABYLON.CubeTexture.CreateFromImages(urls, scene);
             cube.coordinatesMode = BABYLON.Texture.SKYBOX_MODE;
@@ -2844,9 +2978,138 @@
     console.log('🔍 RUNTIME: Available materials:', scene.materials.map(m => ({ name: m.name, uniqueId: m.uniqueId })));
     
     for (const [materialName, properties] of Object.entries(overrides)) {
+      // Skip orphan materials with fake users (editor-only placeholders)
+      if (properties.__fakeUser && properties.__isOrphan) {
+        console.log('⏭️ RUNTIME: Skipping orphan material with fake user: ' + materialName + ' (editor-only)');
+        continue;
+      }
+      
+      const shaderType = properties.metadata?.shaderType;
+      const snippetId = properties.metadata?.shaderSnippetId;
+      const shaderSource = properties.metadata?.shaderSource;
+      
       // Only look for materials by name (stable identifier)
-      const material = scene.materials.find(m => m.name === materialName);
-      console.log('🔍 RUNTIME: Looking for material by name:', materialName, 'found:', !!material);
+      let material = scene.materials.find(m => m.name === materialName);
+      console.log('🔍 RUNTIME: Looking for material by name: "' + materialName + '", found:', !!material);
+      
+      // If material doesn't exist but we have metadata, create it based on shader type
+      if (!material && shaderType) {
+        console.log('🎨 RUNTIME: Material "' + materialName + '" not found, creating new ' + shaderType + ' material');
+        
+        if (shaderType === 'pbr') {
+          // Create PBR material
+          material = new BABYLON.PBRMaterial(materialName, scene);
+          console.log('✅ RUNTIME: Created PBR material: ' + materialName);
+        } else if (shaderType === 'standard') {
+          // Create Standard material
+          material = new BABYLON.StandardMaterial(materialName, scene);
+          console.log('✅ RUNTIME: Created Standard material: ' + materialName);
+        } else if (shaderType === 'custom' && snippetId && shaderSource === 'url') {
+          // Create NME shader material
+          console.log('🎨 RUNTIME: Creating custom NME shader material: ' + materialName + ' from snippet ' + snippetId);
+          // NME shaders need to be loaded asynchronously, handle below
+        }
+        
+        // Assign the newly created material to meshes that need it
+        if (material && EXPORTED_SCENE_GRAPH.nodes) {
+          let meshesAssigned = 0;
+          EXPORTED_SCENE_GRAPH.nodes.forEach(function(node) {
+            if (node.metadata?.materialName === materialName) {
+              const mesh = scene.getMeshById(node.id) || 
+                          scene.getMeshByName(node.name) ||
+                          scene.meshes.find(function(m) { return m.metadata?.graphNodeId === node.id; });
+              
+              if (mesh) {
+                console.log('🔗 RUNTIME: Assigning ' + shaderType + ' material "' + materialName + '" to mesh: ' + mesh.name);
+                mesh.material = material;
+                meshesAssigned++;
+              }
+            }
+          });
+          console.log('📊 RUNTIME: Assigned ' + shaderType + ' material "' + materialName + '" to ' + meshesAssigned + ' mesh(es)');
+        }
+      }
+      
+      // If it's a custom shader with NME snippet and not found, try to create it asynchronously
+      if (!material && shaderType === 'custom' && snippetId && shaderSource === 'url') {
+        console.log('🎨 RUNTIME: Creating custom NME shader material: ' + materialName + ' from snippet ' + snippetId);
+        try {
+          const formattedSnippetId = snippetId.startsWith('#') ? snippetId : '#' + snippetId;
+          BABYLON.NodeMaterial.ParseFromSnippetAsync(formattedSnippetId, scene).then(function(nodeMaterial) {
+            if (nodeMaterial) {
+              nodeMaterial.name = materialName;
+              nodeMaterial.build(false);
+              
+              // Find all meshes that should use this material
+              let meshesAssigned = 0;
+              
+              // First, try to find meshes by checking scene graph nodes
+              if (EXPORTED_SCENE_GRAPH.nodes) {
+                EXPORTED_SCENE_GRAPH.nodes.forEach(function(node) {
+                  if (node.metadata?.materialName === materialName) {
+                    const mesh = scene.getMeshById(node.id) || 
+                                scene.getMeshByName(node.name) ||
+                                scene.meshes.find(function(m) { return m.metadata?.graphNodeId === node.id; });
+                    
+                    if (mesh) {
+                      console.log('🔗 RUNTIME: Assigning NME shader "' + materialName + '" to mesh: ' + mesh.name + ' (from scene graph)');
+                      mesh.material = nodeMaterial;
+                      meshesAssigned++;
+                    }
+                  }
+                });
+              }
+              
+              // Fallback: check if any mesh's current material name matches
+              if (meshesAssigned === 0) {
+                scene.meshes.forEach(function(mesh) {
+                  if (mesh.material && mesh.material.name === materialName) {
+                    console.log('🔗 RUNTIME: Assigning NME shader to mesh: ' + mesh.name + ' (by material name match)');
+                    mesh.material = nodeMaterial;
+                    meshesAssigned++;
+                  }
+                });
+              }
+              
+              console.log('📊 RUNTIME: Assigned NME shader "' + materialName + '" to ' + meshesAssigned + ' mesh(es)');
+              console.log('✅ RUNTIME: Created and assigned NME shader material: ' + materialName);
+            }
+          }).catch(function(error) {
+            console.error('❌ RUNTIME: Failed to load NME shader for ' + materialName + ':', error);
+          });
+        } catch (error) {
+          console.error('❌ RUNTIME: Error creating NME shader material:', error);
+        }
+        continue; // Skip property application for now, will be applied when NME loads
+      }
+      
+      // Also handle the case where material exists but needs to be replaced with NME shader
+      if (material && shaderType === 'custom' && snippetId && shaderSource === 'url') {
+        if (!(material instanceof BABYLON.NodeMaterial)) {
+          console.log('🎨 RUNTIME: Replacing existing material with NME shader: ' + materialName);
+          try {
+            const formattedSnippetId = snippetId.startsWith('#') ? snippetId : '#' + snippetId;
+            BABYLON.NodeMaterial.ParseFromSnippetAsync(formattedSnippetId, scene).then(function(nodeMaterial) {
+              if (nodeMaterial) {
+                nodeMaterial.name = materialName;
+                nodeMaterial.build(false);
+                scene.meshes.forEach(function(mesh) {
+                  if (mesh.material === material) {
+                    mesh.material = nodeMaterial;
+                  }
+                });
+                material.dispose();
+                material = nodeMaterial;
+                console.log('✅ RUNTIME: Replaced material with NME shader: ' + materialName);
+              }
+            }).catch(function(error) {
+              console.error('❌ RUNTIME: Failed to replace material with NME shader:', error);
+            });
+          } catch (error) {
+            console.error('❌ RUNTIME: Error replacing material with NME shader:', error);
+          }
+        }
+      }
       
       if (material) {
         console.log('✨ RUNTIME: Applying overrides to material:', material.name, 'uniqueId:', material.uniqueId);
@@ -2854,6 +3117,9 @@
         
         // Apply each property override
         for (const [property, value] of Object.entries(properties)) {
+          if (property.startsWith('__')) { // Skip internal metadata properties
+            continue;
+          }
           try {
               console.log('🔍 RUNTIME: Processing property:', property, 'value:', value, 'isTexture:', isTextureProperty(property));
               
@@ -2936,8 +3202,14 @@
                 }
               } else {
                 // Handle non-texture properties
-                material[property] = value;
-                console.log('✅ RUNTIME: Applied non-texture property:', materialName + '.' + property + ' = ' + value);
+                // Special handling for color properties (stored as arrays, need to convert to Color3)
+                if (property.includes('Color') && Array.isArray(value) && value.length === 3) {
+                  material[property] = new BABYLON.Color3(value[0], value[1], value[2]);
+                  console.log('✅ RUNTIME: Applied color property:', materialName + '.' + property + ' = [' + value.join(', ') + ']');
+                } else {
+                  material[property] = value;
+                  console.log('✅ RUNTIME: Applied non-texture property:', materialName + '.' + property + ' = ' + value);
+                }
                 
                 // Special handling for lightmap shadow mapping
                 if (property === 'useLightmapAsShadowmap') {
@@ -2972,7 +3244,7 @@
   function toRelativeAssetPath(storagePath) {
     const pathStr = String(storagePath);
     // 1) If looks like '<uid>/projects/<projectId>/...', keep everything after projectId
-    //    This preserves the full path: assets/subfolder/file.ext
+    //    This preserves the full path: assets/subfolder/file.ext OR root file.ext
     const parts = pathStr.split('/');
     const projIdx = parts.indexOf('projects');
     if (projIdx >= 0 && parts.length > projIdx + 2) {
@@ -2985,9 +3257,9 @@
     if (idx >= 0) {
       return pathStr.substring(idx + 1); // +1 to skip the leading '/'
     }
-    // 3) Fallback to filename
+    // 3) Fallback to filename (keep at root, don't add assets/ prefix)
     const filename = parts[parts.length - 1];
-    if (filename) return 'assets/' + filename; // Add assets/ prefix for bare filenames
+    if (filename) return filename; // Return bare filename for root assets
     // 4) Ultimate fallback: sanitize path without regex
     return pathStr.split('/').join('_').split('\\').join('_');
   }
@@ -3880,6 +4152,8 @@
       scene: scene,
       sceneGraph: sceneGraph,
       cameraShakeTimers: new Map(), // cameraId -> { time, baseTarget, baseAlpha, baseBeta }
+      beforeRenderObserver: null, // Store observer reference for disposal
+      afterRenderObserver: null, // Store observer reference for disposal
       
       initialize: function() {
         this.scanForShakeCameras();
@@ -3935,8 +4209,8 @@
           if (shake.preset === 'natural') {
             const strength = shake.strength || 1;
             // Scale down parameters by 100x so users can input 0.1, 0.2 instead of 0.001, 0.002
-            const posAmp = (shake.positionAmplitude || 0.2) * strength * 0.0001;
-            const rotAmp = (shake.rotationAmplitude || 0.002) * strength * 0.0001;
+            const posAmp = (shake.positionAmplitude || 0.2) * strength * 0.00002;
+            const rotAmp = (shake.rotationAmplitude || 0.002) * strength * 0.00002;
 
             // Natural idle shake offset (additive)
             const shakeOffsetX = Math.sin(shakeState.time * 0.6) * posAmp;
@@ -3961,7 +4235,7 @@
           const self = this;
           
           // Apply shake before each frame renders
-          this.scene.onBeforeRenderObservable.add(function() {
+          this.beforeRenderObserver = this.scene.onBeforeRenderObservable.add(function() {
             self.updateCameraShakes();
             
             // Apply visual shake offsets to cameras (saved to restore later)
@@ -3971,46 +4245,49 @@
               
               const offset = camera._visualShakeOffset;
               
-              // Save original values
-              if (!camera._originalBeforeShake) {
-                camera._originalBeforeShake = {};
+              // Save current values BEFORE applying shake (so we can restore them after render)
+              // This captures the user's current camera position/rotation for this frame
+              if (!camera._preShakeThisFrame) {
+                camera._preShakeThisFrame = {};
               }
               
               if (camera instanceof BABYLON.ArcRotateCamera) {
-                camera._originalBeforeShake.alpha = camera.alpha;
-                camera._originalBeforeShake.beta = camera.beta;
-                camera._originalBeforeShake.target = camera.target.clone();
+                camera._preShakeThisFrame.alpha = camera.alpha;
+                camera._preShakeThisFrame.beta = camera.beta;
+                camera._preShakeThisFrame.target = camera.target.clone();
                 
-                // Apply shake for this frame
-                camera.target = camera.target.add(new BABYLON.Vector3(offset.x, offset.y, 0));
+                // Apply shake ADDITIVELY to current position
                 camera.alpha += offset.alpha;
                 camera.beta += offset.beta;
+                camera.target = camera.target.add(new BABYLON.Vector3(offset.x, offset.y, 0));
               } else {
-                camera._originalBeforeShake.position = camera.position.clone();
+                camera._preShakeThisFrame.position = camera.position.clone();
+                
+                // Apply shake ADDITIVELY to current position
                 camera.position = camera.position.add(new BABYLON.Vector3(offset.x, offset.y, 0));
               }
             }
           });
           
-          // Restore original values after render to prevent them from being saved/broadcast
-          this.scene.onAfterRenderObservable.add(function() {
+          // Restore pre-shake values after render to prevent shake from being permanently applied
+          this.afterRenderObserver = this.scene.onAfterRenderObservable.add(function() {
             for (const [cameraId] of self.cameraShakeTimers) {
               const camera = self.scene.getCameraById(cameraId);
-              if (!camera || !camera._originalBeforeShake) continue;
+              if (!camera || !camera._preShakeThisFrame) continue;
               
               if (camera instanceof BABYLON.ArcRotateCamera) {
-                if (camera._originalBeforeShake.target) {
-                  camera.target = camera._originalBeforeShake.target;
+                if (camera._preShakeThisFrame.target) {
+                  camera.target = camera._preShakeThisFrame.target;
                 }
-                if (camera._originalBeforeShake.alpha !== undefined) {
-                  camera.alpha = camera._originalBeforeShake.alpha;
+                if (camera._preShakeThisFrame.alpha !== undefined) {
+                  camera.alpha = camera._preShakeThisFrame.alpha;
                 }
-                if (camera._originalBeforeShake.beta !== undefined) {
-                  camera.beta = camera._originalBeforeShake.beta;
+                if (camera._preShakeThisFrame.beta !== undefined) {
+                  camera.beta = camera._preShakeThisFrame.beta;
                 }
               } else {
-                if (camera._originalBeforeShake.position) {
-                  camera.position = camera._originalBeforeShake.position;
+                if (camera._preShakeThisFrame.position) {
+                  camera.position = camera._preShakeThisFrame.position;
                 }
               }
             }
@@ -4021,6 +4298,15 @@
       },
       
       dispose: function() {
+        // Remove observers to prevent multiple shake applications
+        if (this.beforeRenderObserver && this.scene) {
+          this.scene.onBeforeRenderObservable.remove(this.beforeRenderObserver);
+          this.beforeRenderObserver = null;
+        }
+        if (this.afterRenderObserver && this.scene) {
+          this.scene.onAfterRenderObservable.remove(this.afterRenderObserver);
+          this.afterRenderObserver = null;
+        }
         this.cameraShakeTimers.clear();
         console.log('📹 CameraShakeManager disposed');
       }
