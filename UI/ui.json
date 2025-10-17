@@ -305,44 +305,6 @@
       "enabled": true
     },
     {
-      "id": "button_001",
-      "name": "Switch View",
-      "type": "button",
-      "parentId": "box_001",
-      "style": {
-        "display": "flex",
-        "justifyContent": "center",
-        "alignItems": "center",
-        "alignSelf": "center",
-        "justifySelf": "center",
-        "width": "100%",
-        "height": "40px",
-        "backgroundColor": "transparent",
-        "color": "#ffffff",
-        "fontSize": "14px",
-        "fontWeight": "500",
-        "cursor": "pointer",
-        "padding": "8px 16px",
-        "paddingTop": "0px",
-        "paddingRight": "0px",
-        "paddingBottom": "0px",
-        "paddingLeft": "0px",
-        "borderTopLeftRadius": "8px",
-        "borderTopRightRadius": "8px",
-        "borderBottomLeftRadius": "8px",
-        "borderBottomRightRadius": "8px",
-        "borderWidth": "1px",
-        "borderColor": "rgba(255, 255, 255, 0.7)",
-        "gap": "8px",
-        "flexDirection": "row"
-      },
-      "content": {
-        "text": ""
-      },
-      "visible": true,
-      "enabled": true
-    },
-    {
       "id": "button_002",
       "name": "Body-Yellow",
       "type": "button",
@@ -702,50 +664,6 @@
       },
       "content": {
         "text": ""
-      },
-      "visible": true,
-      "enabled": true
-    },
-    {
-      "id": "image_001",
-      "name": "Interior_Img",
-      "type": "image",
-      "parentId": "button_001",
-      "style": {
-        "display": "block",
-        "alignSelf": "center",
-        "justifySelf": "center",
-        "width": "auto",
-        "height": "50%",
-        "borderColor": "#6c757d",
-        "borderWidth": "0px",
-        "borderRadius": "4px"
-      },
-      "content": {
-        "imageUrl": "867a8a57-eee4-40db-a3b8-7d15faa374e3/projects/f23d66f1-66c5-4b67-9b52-46dc3c9022c0/assets/interior.png"
-      },
-      "visible": true,
-      "enabled": true
-    },
-    {
-      "id": "text_004",
-      "name": "View Interior",
-      "type": "text",
-      "parentId": "button_001",
-      "style": {
-        "display": "inline-block",
-        "alignSelf": "center",
-        "justifySelf": "center",
-        "width": "auto",
-        "height": "auto",
-        "color": "#ffffff",
-        "fontSize": "16px",
-        "fontWeight": "400",
-        "fontFamily": "'Courier New', monospace",
-        "whiteSpace": "nowrap"
-      },
-      "content": {
-        "text": "View Interior"
       },
       "visible": true,
       "enabled": true
@@ -1453,11 +1371,92 @@
       },
       "visible": true,
       "enabled": true
+    },
+    {
+      "id": "button_018",
+      "name": "Switch",
+      "type": "button",
+      "parentId": "box_001",
+      "style": {
+        "display": "flex",
+        "justifyContent": "center",
+        "alignItems": "center",
+        "alignSelf": "center",
+        "justifySelf": "center",
+        "width": "100%",
+        "height": "40px",
+        "backgroundColor": "transparent",
+        "color": "#ffffff",
+        "fontSize": "14px",
+        "fontWeight": "500",
+        "cursor": "pointer",
+        "padding": "8px 16px",
+        "paddingTop": "0px",
+        "paddingRight": "0px",
+        "paddingBottom": "0px",
+        "paddingLeft": "0px",
+        "borderTopLeftRadius": "8px",
+        "borderTopRightRadius": "8px",
+        "borderBottomLeftRadius": "8px",
+        "borderBottomRightRadius": "8px",
+        "borderWidth": "1px",
+        "borderColor": "rgba(255, 255, 255, 0.8)",
+        "flexDirection": "row",
+        "gap": "8px"
+      },
+      "content": {
+        "text": ""
+      },
+      "visible": true,
+      "enabled": true
+    },
+    {
+      "id": "image_012",
+      "name": "Image_03",
+      "type": "image",
+      "parentId": "button_018",
+      "style": {
+        "display": "block",
+        "alignSelf": "center",
+        "justifySelf": "center",
+        "width": "auto",
+        "height": "50%",
+        "borderColor": "#6c757d",
+        "borderWidth": "0px",
+        "borderRadius": "4px"
+      },
+      "content": {
+        "imageUrl": "867a8a57-eee4-40db-a3b8-7d15faa374e3/projects/f23d66f1-66c5-4b67-9b52-46dc3c9022c0/assets/interior.png"
+      },
+      "visible": true,
+      "enabled": true
+    },
+    {
+      "id": "text_005",
+      "name": "Text",
+      "type": "text",
+      "parentId": "button_018",
+      "style": {
+        "display": "inline-block",
+        "alignSelf": "center",
+        "justifySelf": "center",
+        "width": "auto",
+        "height": "auto",
+        "color": "#ffffff",
+        "fontSize": "14px",
+        "fontWeight": "normal",
+        "fontFamily": "'Courier New', monospace"
+      },
+      "content": {
+        "text": "View Interior"
+      },
+      "visible": true,
+      "enabled": true
     }
   ],
   "metadata": {
     "createdAt": "2025-10-10T09:06:54.727Z",
-    "lastModified": "2025-10-16T05:22:15.577Z"
+    "lastModified": "2025-10-16T20:16:07.103Z"
   },
   "screenSizeSettings": {
     "mobile": {
@@ -1465,8 +1464,8 @@
       "width": 768
     },
     "tablet": {
-      "enabled": false,
-      "width": 768
+      "enabled": true,
+      "width": 1024
     }
   }
 }
