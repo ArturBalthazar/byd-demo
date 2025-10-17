@@ -42,8 +42,8 @@
             "type": "button"
           },
           "viewSwapBtn": {
-            "id": "button_001",
-            "name": "Switch View",
+            "id": "button_018",
+            "name": "Switch",
             "type": "button"
           },
           "exteriorCameraRef": {
@@ -96,8 +96,8 @@
             "type": "button"
           },
           "buttonToggleInterior": {
-            "id": "button_001",
-            "name": "Switch View",
+            "id": "button_018",
+            "name": "Switch",
             "type": "button"
           },
           "buttonSteeringWheel": {
