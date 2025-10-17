@@ -570,7 +570,7 @@
       }
       
       // Apply hover and active state styles
-      if (element.hoverStyle || element.activeStyle) {
+      if (element.hoverStyle || element.activeStyle || element.mobileStyle || element.mobileHoverStyle || element.mobileActiveStyle || element.tabletStyle || element.tabletHoverStyle || element.tabletActiveStyle) {
         this.applyPseudoStates(domElement, element);
       }
       
@@ -1161,6 +1161,32 @@
     if (overlay && text) {
       overlay.classList.remove('hidden');
       text.textContent = message;
+    }
+    
+    // Update progress bar
+    const progressBarGlow = document.getElementById('progressBarGlow');
+    const progressBarSolid = document.getElementById('progressBarSolid');
+    if (progressBarGlow && progressBarSolid) {
+      // Define loading steps
+      const steps = [
+        'Initializing viewer...',
+        'Loading scene...',
+        'Creating scene objects...',
+        'Initializing physics...',
+        'Applying scene settings...',
+        'Preparing scene...',
+        'Setting up input controls...',
+        'Loading custom logic...',
+        'Loading UI...',
+        'Finalizing...'
+      ];
+      
+      const stepIndex = steps.findIndex(function(step) { return step === message; });
+      if (stepIndex >= 0) {
+        const progress = ((stepIndex + 1) / steps.length) * 100;
+        progressBarGlow.style.width = progress + '%';
+        progressBarSolid.style.width = progress + '%';
+      }
     }
   }
 
